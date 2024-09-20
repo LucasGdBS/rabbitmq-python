@@ -1,44 +1,29 @@
 import pika
 from decouple import config
+from rabbitmq import Rabbitmq
 
-class RabbitmqConsumer:
+class RabbitmqConsumer(Rabbitmq):
 	def __init__(self, callback) -> None:
-		self.__host = config('HOST')
-		self.__port = int(config('PORT'))
-		self.__virtual_host = config('VIRTUAL_HOST')
-		self.__username = config('RABBIT_USERNAME')
-		self.__password = config('PASSWORD')
+		super().__init__()
+
 		self.__queue = "data_queue"
 		self.__callback = callback
-		self.__channel = self.__create_chanel()
+		self.set_consume()
 	
-	def __create_chanel(self):
-		connection_parameters = pika.ConnectionParameters(
-			host=self.__host,
-			port=self.__port,
-			virtual_host=self.__virtual_host,
-			credentials=pika.PlainCredentials(
-				username=self.__username,
-				password=self.__password,
-			),
-		)
-
-		channel = pika.BlockingConnection(connection_parameters).channel()
-		channel.queue_declare(
+	def set_consume(self):
+		self._Rabbitmq__channel.queue_declare(
 			queue=self.__queue,
 			durable=True
 		)
-		channel.basic_consume(
+		self._Rabbitmq__channel.basic_consume(
 			queue=self.__queue,
 			auto_ack=True,
 			on_message_callback=self.__callback
 		)
 
-		return channel
-
 	def start(self):
-		print(f'Listem RabbitMQ on Port: {self.__port}')
-		self.__channel.start_consuming()
+		print(f'Listem RabbitMQ on Port: {self._Rabbitmq__port}')
+		self._Rabbitmq__channel.start_consuming()
 
 def minha_callback(ch, method, properties, body):
 	print(f'Recebendo mensagem: {body}')
